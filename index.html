@@ -1,310 +1,113 @@
 <!doctype html>
 <html lang="pl">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Replay Operator Dock</title>
-  <script src="https://cdn.jsdelivr.net/npm/obs-websocket-js@5.0.6/dist/obs-ws.min.js"></script>
-  <style>
-    :root{
-      --bg:#0f1115;--panel:#171a21;--panel2:#1e2430;--line:#2e3644;--text:#eef2f7;--muted:#98a2b3;
-      --green:#20c997;--blue:#4dabf7;--red:#fa5252;--yellow:#ffd43b;--shadow:0 12px 28px rgba(0,0,0,.28)
-    }
-    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,system-ui,sans-serif}
-    .wrap{padding:12px;display:grid;gap:12px}
-    .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:12px}
-    h1,h2,h3{margin:0 0 8px} h1{font-size:18px} h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-    .grid{display:grid;gap:8px}.cols-2{grid-template-columns:repeat(2,1fr)}.cols-3{grid-template-columns:repeat(3,1fr)}.cols-1{grid-template-columns:1fr}
-    button,input,select,textarea{font:inherit}
-    button{appearance:none;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--panel2);color:var(--text);cursor:pointer;font-weight:700}
-    button:hover{filter:brightness(1.08)} button:disabled{opacity:.45;cursor:not-allowed}
-    .blue{background:var(--blue);color:#09131f;border-color:transparent}.green{background:var(--green);color:#05150f;border-color:transparent}.red{background:var(--red);color:#210808;border-color:transparent}.yellow{background:var(--yellow);color:#171204;border-color:transparent}
-    .field{display:grid;gap:6px}.field label{font-size:12px;color:var(--muted)}
-    input,textarea{width:100%;background:#10141b;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-    textarea{min-height:110px;resize:vertical}
-    .meta{display:flex;flex-wrap:wrap;gap:8px}.pill{padding:5px 9px;border-radius:999px;background:#10141b;border:1px solid var(--line);color:var(--muted);font-size:12px}
-    .cam-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.small{font-size:12px;color:var(--muted)}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OBS Replay Dock</title>
+<style>
+:root{--bg:#0f1115;--panel:#171b22;--panel2:#1f2632;--line:#30394a;--text:#edf2f7;--muted:#94a3b8;--green:#20c997;--blue:#4dabf7;--red:#fa5252;--yellow:#ffd43b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 Inter,system-ui,sans-serif}
+.wrap{padding:12px;display:grid;gap:12px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.grid{display:grid;gap:8px}.cols-2{grid-template-columns:repeat(2,1fr)}.cols-3{grid-template-columns:repeat(3,1fr)}
+button,input,textarea{font:inherit}button{appearance:none;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--panel2);color:var(--text);cursor:pointer;font-weight:700}
+button:hover{filter:brightness(1.08)}.green{background:var(--green);color:#06140f;border-color:transparent}.blue{background:var(--blue);color:#09131f;border-color:transparent}.red{background:var(--red);color:#220707;border-color:transparent}.yellow{background:var(--yellow);color:#1a1405;border-color:transparent}
+.field{display:grid;gap:6px}.field label{font-size:12px;color:var(--muted)}input,textarea{width:100%;background:#10151d;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}textarea{min-height:110px;resize:vertical}
+.meta{display:flex;gap:8px;flex-wrap:wrap}.pill{padding:5px 9px;border-radius:999px;background:#10151d;border:1px solid var(--line);color:var(--muted);font-size:12px}
+.cam-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.small{font-size:12px;color:var(--muted)}h1,h2{margin:0 0 8px}h1{font-size:18px}h2{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+</style>
 </head>
 <body>
 <div class="wrap">
   <div class="panel">
-    <h1>Replay Operator Dock</h1>
+    <h1>OBS Replay Dock</h1>
     <div class="grid cols-2">
-      <div class="field"><label>OBS WebSocket URL</label><input id="url" value="ws://127.0.0.1:4455"></div>
-      <div class="field"><label>Hasło</label><input id="password" type="password" placeholder="opcjonalnie"></div>
+      <div class="field"><label>WebSocket URL</label><input id="url" value="ws://127.0.0.1:4455"></div>
+      <div class="field"><label>Hasło</label><input id="password" type="password" placeholder="Hasło z OBS"></div>
     </div>
     <div class="grid cols-2" style="margin-top:8px">
       <button id="connect" class="green">Połącz z OBS</button>
       <button id="disconnect" class="red">Rozłącz</button>
     </div>
     <div class="meta" style="margin-top:10px">
-      <span class="pill" id="connState">Rozłączono</span>
-      <span class="pill" id="gridState">GRID: -</span>
-      <span class="pill" id="programState">PROGRAM: -</span>
-      <span class="pill" id="previewState">PREVIEW: -</span>
+      <span class="pill" id="status">Status: niepołączony</span>
+      <span class="pill" id="note">Ta wersja testuje czysty WebSocket bez zewnętrznych bibliotek.</span>
     </div>
   </div>
 
   <div class="panel">
-    <h2>Konfiguracja</h2>
-    <div class="grid cols-3">
-      <div class="field"><label>Scena GRID</label><input id="gridScene" value="REPLAY_GRID"></div>
-      <div class="field"><label>Scena PROGRAM</label><input id="programScene" value="REPLAY_PROGRAM"></div>
-      <div class="field"><label>Liczba kolumn GRID</label><input id="gridCols" type="number" min="1" max="8" value="4"></div>
-    </div>
-    <div class="grid cols-3" style="margin-top:8px">
-      <div class="field"><label>Canvas width</label><input id="canvasW" type="number" value="1920"></div>
-      <div class="field"><label>Canvas height</label><input id="canvasH" type="number" value="1080"></div>
-      <div class="field"><label>Padding</label><input id="padding" type="number" value="20"></div>
-    </div>
-    <div class="field" style="margin-top:8px">
-      <label>Źródła (Replay|Live, po jednej linii)</label>
+    <h2>Konfiguracja kamer</h2>
+    <div class="field">
+      <label>Replay|Live, po jednej linii</label>
       <textarea id="sources">RS_CAM_1|CAM_1
 RS_CAM_2|CAM_2</textarea>
     </div>
-    <div class="grid cols-2" style="margin-top:8px">
-      <button id="buildScenes" class="yellow">Zbuduj / odśwież sceny</button>
-      <button id="refreshState">Odśwież stan</button>
-    </div>
-    <div class="small" style="margin-top:8px">Dock steruje OBS bezpośrednio przez obs-websocket, a nie przez panel skryptu [web:60][web:2].</div>
-  </div>
-
-  <div class="panel">
-    <h2>GRID</h2>
-    <div class="grid cols-3">
-      <button id="gridLive" class="blue">Ustaw LIVE na GRID</button>
-      <button id="gridReplay" class="blue">Ustaw REPLAY na GRID</button>
-      <button id="gridBoth" class="green">Ustaw LIVE+REPLAY na GRID</button>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Powtórki</h2>
-    <div class="grid cols-2">
-      <button id="playReplays" class="green">Odtwórz powtórki</button>
-      <button id="resetReplays" class="red">Resetuj powtórki</button>
-    </div>
+    <div class="small" style="margin-top:8px">Ta wersja jest diagnostyczna: najpierw sprawdzamy samo połączenie przyciskiem „Połącz z OBS”.</div>
   </div>
 
   <div class="panel">
     <h2>Kamery</h2>
-    <div id="cams" class="grid cols-1"></div>
+    <div id="cams" class="grid"></div>
   </div>
 </div>
-
 <script>
-const obs = new OBSWebSocket();
-let connected = false;
-let state = { cameras: [], gridMode: 'LIVE_REPLAY', gridScene: 'REPLAY_GRID', programScene: 'REPLAY_PROGRAM' };
-
+let ws = null;
 const $ = id => document.getElementById(id);
-const setText = (id, txt) => $(id).textContent = txt;
-
-function parseSources(text){
-  return text.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map((line, idx) => {
-    const [replay, live] = line.split('|').map(v => v.trim());
-    return { index: idx + 1, replay, live };
-  }).filter(v => v.replay && v.live);
-}
-
-function syncStateFromForm(){
-  state.gridScene = $('gridScene').value.trim() || 'REPLAY_GRID';
-  state.programScene = $('programScene').value.trim() || 'REPLAY_PROGRAM';
-  state.gridCols = parseInt($('gridCols').value || '4', 10);
-  state.canvasW = parseInt($('canvasW').value || '1920', 10);
-  state.canvasH = parseInt($('canvasH').value || '1080', 10);
-  state.padding = parseInt($('padding').value || '20', 10);
-  state.cameras = parseSources($('sources').value);
-  renderCams();
-}
 
 function renderCams(){
   const wrap = $('cams');
   wrap.innerHTML = '';
-  state.cameras.forEach(cam => {
+  $('sources').value.split(/\r?\n/).map(v => v.trim()).filter(Boolean).forEach((line, idx) => {
+    const [replay, live] = line.split('|').map(v => (v || '').trim());
+    if(!replay || !live) return;
     const row = document.createElement('div');
     row.className = 'cam-row';
-    const live = document.createElement('button');
-    live.className = 'blue';
-    live.textContent = `LIVE ${cam.live}`;
-    live.onclick = () => showLiveOnProgram(cam.index);
-    const replay = document.createElement('button');
-    replay.className = 'green';
-    replay.textContent = `REPLAY ${cam.replay}`;
-    replay.onclick = () => showReplayOnProgram(cam.index);
-    row.append(live, replay);
+    const b1 = document.createElement('button');
+    b1.className = 'blue';
+    b1.textContent = 'LIVE ' + live;
+    const b2 = document.createElement('button');
+    b2.className = 'green';
+    b2.textContent = 'REPLAY ' + replay;
+    row.append(b1,b2);
     wrap.appendChild(row);
   });
 }
 
-async function connect(){
-  try{
-    await obs.connect($('url').value.trim(), $('password').value);
-    connected = true;
-    setText('connState', 'Połączono');
-    await refreshProgramPreviewState();
-  }catch(err){
-    alert('Błąd połączenia z OBS WebSocket: ' + (err.message || err));
+function setStatus(text){ $('status').textContent = 'Status: ' + text; }
+
+function connectObs(){
+  try {
+    const url = $('url').value.trim();
+    setStatus('łączenie…');
+    ws = new WebSocket(url);
+    ws.onopen = () => {
+      setStatus('socket otwarty');
+    };
+    ws.onerror = (e) => {
+      setStatus('błąd połączenia');
+      console.error('WS error', e);
+    };
+    ws.onclose = () => {
+      setStatus('rozłączony');
+    };
+    ws.onmessage = (ev) => {
+      console.log('WS message', ev.data);
+      setStatus('połączony / odebrano dane');
+    };
+  } catch(err) {
+    setStatus('wyjątek JS');
+    console.error(err);
   }
 }
 
-async function disconnect(){
-  try{ await obs.disconnect(); }catch(e){}
-  connected = false;
-  setText('connState', 'Rozłączono');
+function disconnectObs(){
+  try { if(ws) ws.close(); } catch(e) {}
+  setStatus('rozłączony');
 }
 
-async function ensureScene(name){
-  const scenes = await obs.call('GetSceneList');
-  if (!scenes.scenes.find(s => s.sceneName === name)) {
-    await obs.call('CreateScene', { sceneName: name });
-  }
-}
-
-async function ensureInputInScene(sceneName, inputName){
-  const items = await obs.call('GetSceneItemList', { sceneName });
-  const exists = items.sceneItems.find(i => i.sourceName === inputName);
-  if (!exists) {
-    await obs.call('CreateSceneItem', { sceneName, sourceName: inputName });
-  }
-}
-
-async function getSceneItemId(sceneName, sourceName){
-  const items = await obs.call('GetSceneItemList', { sceneName });
-  const item = items.sceneItems.find(i => i.sourceName === sourceName);
-  return item ? item.sceneItemId : null;
-}
-
-async function setSceneItemTransform(sceneName, sourceName, x, y, w, h){
-  const id = await getSceneItemId(sceneName, sourceName);
-  if (id == null) return;
-  await obs.call('SetSceneItemTransform', {
-    sceneName,
-    sceneItemId: id,
-    sceneItemTransform: {
-      positionX: x, positionY: y,
-      boundsType: 'OBS_BOUNDS_SCALE_INNER',
-      boundsWidth: w, boundsHeight: h
-    }
-  });
-}
-
-async function setSceneItemVisible(sceneName, sourceName, visible){
-  const id = await getSceneItemId(sceneName, sourceName);
-  if (id == null) return;
-  await obs.call('SetSceneItemEnabled', { sceneName, sceneItemId: id, sceneItemEnabled: visible });
-}
-
-function visibleTilesCount(mode){ return mode === 'LIVE_REPLAY' ? state.cameras.length * 2 : state.cameras.length; }
-
-async function applyGridMode(mode){
-  state.gridMode = mode;
-  const total = visibleTilesCount(mode);
-  const cols = Math.max(1, state.gridCols || 4);
-  const rows = Math.ceil(total / cols);
-  const tileW = Math.floor((state.canvasW - ((cols + 1) * state.padding)) / cols);
-  const tileH = Math.floor((state.canvasH - ((rows + 1) * state.padding)) / rows);
-  let idx = 0;
-
-  for(const cam of state.cameras){
-    const showLive = mode === 'LIVE' || mode === 'LIVE_REPLAY';
-    const showReplay = mode === 'REPLAY' || mode === 'LIVE_REPLAY';
-    await setSceneItemVisible(state.gridScene, cam.live, showLive);
-    await setSceneItemVisible(state.gridScene, cam.replay, showReplay);
-
-    if(showLive){
-      const col = idx % cols, row = Math.floor(idx / cols);
-      await setSceneItemTransform(state.gridScene, cam.live, state.padding + col * (tileW + state.padding), state.padding + row * (tileH + state.padding), tileW, tileH);
-      idx++;
-    }
-    if(showReplay){
-      const col = idx % cols, row = Math.floor(idx / cols);
-      await setSceneItemTransform(state.gridScene, cam.replay, state.padding + col * (tileW + state.padding), state.padding + row * (tileH + state.padding), tileW, tileH);
-      idx++;
-    }
-  }
-  await obs.call('SetCurrentPreviewScene', { sceneName: state.gridScene });
-  setText('gridState', 'GRID: ' + mode);
-}
-
-async function hideProgramSources(){
-  for(const cam of state.cameras){
-    await setSceneItemVisible(state.programScene, cam.live, false);
-    await setSceneItemVisible(state.programScene, cam.replay, false);
-  }
-}
-
-async function showReplayOnProgram(index){
-  const cam = state.cameras.find(c => c.index === index);
-  if(!cam) return;
-  await hideProgramSources();
-  await setSceneItemVisible(state.programScene, cam.replay, true);
-  await setSceneItemTransform(state.programScene, cam.replay, 0, 0, state.canvasW, state.canvasH);
-  await obs.call('TriggerMediaInputAction', { inputName: cam.replay, mediaAction: 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART' });
-  await obs.call('SetCurrentProgramScene', { sceneName: state.programScene });
-  await obs.call('SetCurrentPreviewScene', { sceneName: state.gridScene });
-  await refreshProgramPreviewState();
-}
-
-async function showLiveOnProgram(index){
-  const cam = state.cameras.find(c => c.index === index);
-  if(!cam) return;
-  await hideProgramSources();
-  await setSceneItemVisible(state.programScene, cam.live, true);
-  await setSceneItemTransform(state.programScene, cam.live, 0, 0, state.canvasW, state.canvasH);
-  await obs.call('SetCurrentProgramScene', { sceneName: state.programScene });
-  await obs.call('SetCurrentPreviewScene', { sceneName: state.gridScene });
-  await refreshProgramPreviewState();
-}
-
-async function playReplays(){
-  for(const cam of state.cameras){
-    await obs.call('TriggerMediaInputAction', { inputName: cam.replay, mediaAction: 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_RESTART' });
-  }
-}
-
-async function resetReplays(){
-  for(const cam of state.cameras){
-    await obs.call('TriggerMediaInputAction', { inputName: cam.replay, mediaAction: 'OBS_WEBSOCKET_MEDIA_INPUT_ACTION_STOP' });
-  }
-}
-
-async function buildScenes(){
-  syncStateFromForm();
-  await ensureScene(state.gridScene);
-  await ensureScene(state.programScene);
-  for(const cam of state.cameras){
-    await ensureInputInScene(state.gridScene, cam.live);
-    await ensureInputInScene(state.gridScene, cam.replay);
-    await ensureInputInScene(state.programScene, cam.live);
-    await ensureInputInScene(state.programScene, cam.replay);
-  }
-  await applyGridMode(state.gridMode || 'LIVE_REPLAY');
-}
-
-async function refreshProgramPreviewState(){
-  try{
-    const prog = await obs.call('GetCurrentProgramScene');
-    setText('programState', 'PROGRAM: ' + prog.currentProgramSceneName);
-  }catch(e){}
-  try{
-    const prev = await obs.call('GetCurrentPreviewScene');
-    setText('previewState', 'PREVIEW: ' + prev.currentPreviewSceneName);
-  }catch(e){}
-}
-
-$('connect').onclick = connect;
-$('disconnect').onclick = disconnect;
-$('buildScenes').onclick = async () => connected && buildScenes();
-$('refreshState').onclick = async () => { syncStateFromForm(); connected && refreshProgramPreviewState(); };
-$('gridLive').onclick = async () => connected && applyGridMode('LIVE');
-$('gridReplay').onclick = async () => connected && applyGridMode('REPLAY');
-$('gridBoth').onclick = async () => connected && applyGridMode('LIVE_REPLAY');
-$('playReplays').onclick = async () => connected && playReplays();
-$('resetReplays').onclick = async () => connected && resetReplays();
-['sources','gridScene','programScene','gridCols','canvasW','canvasH','padding'].forEach(id => $(id).addEventListener('input', syncStateFromForm));
-syncStateFromForm();
+$('connect').addEventListener('click', connectObs);
+$('disconnect').addEventListener('click', disconnectObs);
+$('sources').addEventListener('input', renderCams);
+renderCams();
 </script>
 </body>
 </html>
